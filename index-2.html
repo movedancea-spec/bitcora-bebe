@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Bitácora — Diario del bebé</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F3F6F4;
+    --paper-card: #FFFFFF;
+    --ink: #2B2E3A;
+    --ink-soft: #6B7280;
+    --line: #E4E8E6;
+    --alert: #E2725B;
+    --alert-bg: #FCEAE6;
+    --good: #4CA678;
+    --good-bg: #E4F5EC;
+
+    /* tema por defecto: neutro */
+    --accent: #7C6FD1;
+    --accent-dark: #564C9E;
+    --accent-light: #E9E5FB;
+    --accent-line: #C9C1F0;
+  }
+  html[data-gender="nino"]{
+    --accent: #4A90C4;
+    --accent-dark: #2E6690;
+    --accent-light: #DCEEFB;
+    --accent-line: #AED4EE;
+  }
+  html[data-gender="nina"]{
+    --accent: #E0708F;
+    --accent-dark: #B04A67;
+    --accent-light: #FCE3EA;
+    --accent-line: #F3B9C9;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 84px;
+  }
+  h1,h2,h3, .brand, .tab-label{ font-family:'Fredoka', sans-serif; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+
+  /* ---------- Header ---------- */
+  header{
+    background: linear-gradient(160deg, var(--accent) 0%, var(--accent-dark) 100%);
+    color: white;
+    padding: 22px 20px 28px;
+    border-radius: 0 0 28px 28px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute; right:-30px; top:-30px;
+    width:160px; height:160px; border-radius:50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .header-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .brand{ font-size: 22px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .brand-icon{ font-size:26px; }
+  .baby-name{ font-size: 28px; font-weight:700; margin: 10px 0 2px; }
+  .baby-sub{ font-size: 14px; opacity: 0.92; }
+  .settings-btn{
+    background: rgba(255,255,255,0.18);
+    border: none; color:white; width:40px; height:40px; border-radius:12px;
+    font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ---------- Tabs (bottom nav) ---------- */
+  nav.tabs{
+    position: fixed; bottom:0; left:0; right:0;
+    background: var(--paper-card);
+    border-top: 1px solid var(--line);
+    display:flex;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    z-index: 50;
+  }
+  nav.tabs button{
+    flex:1; background:none; border:none; padding:8px 4px;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    color: var(--ink-soft); cursor:pointer; border-radius: 14px;
+  }
+  nav.tabs button .tab-icon{ font-size: 20px; }
+  nav.tabs button .tab-label{ font-size: 11px; font-weight:600; }
+  nav.tabs button.active{ color: var(--accent-dark); background: var(--accent-light); }
+
+  main{ max-width: 520px; margin: 0 auto; padding: 18px 16px 24px; }
+  .view{ display:none; }
+  .view.active{ display:block; animation: fadein .25s ease; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .section-title{ font-size: 15px; font-weight:700; color:var(--ink-soft); text-transform: uppercase; letter-spacing:.04em; margin: 22px 0 10px; }
+  .section-title:first-child{ margin-top: 4px; }
+
+  /* ---------- Cards / Quick add ---------- */
+  .card{
+    background: var(--paper-card);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 2px 10px rgba(30,30,40,0.05);
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+  }
+  .card h3{ margin:0 0 12px; font-size:17px; display:flex; align-items:center; gap:8px; }
+
+  .field{ margin-bottom: 12px; }
+  .field label{ display:block; font-size:13px; font-weight:700; color:var(--ink-soft); margin-bottom:6px; }
+  .field input[type=text], .field input[type=time], .field input[type=date], .field textarea, .field select{
+    width:100%; padding: 11px 12px; border-radius: 12px; border:1.5px solid var(--line);
+    font-family:'Nunito', sans-serif; font-size:15px; background: var(--paper); color:var(--ink);
+  }
+  .field textarea{ resize:vertical; min-height:60px; }
+  .field input:focus, .field textarea:focus, .field select:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    border: 1.5px solid var(--line); background: var(--paper-card); color: var(--ink);
+    padding: 9px 14px; border-radius: 999px; font-size: 14px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; gap:6px; user-select:none;
+  }
+  .chip.selected{ background: var(--accent-light); border-color: var(--accent-line); color: var(--accent-dark); }
+  .chip .emoji{ font-size:16px; }
+
+  .btn-primary{
+    width:100%; border:none; background: var(--accent); color:white; font-weight:700;
+    font-family:'Fredoka', sans-serif; font-size:16px; padding:13px; border-radius:14px; cursor:pointer;
+    margin-top: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+  }
+  .btn-primary:active{ transform: scale(0.98); }
+  .btn-secondary{
+    width:100%; border:1.5px solid var(--line); background:var(--paper-card); color:var(--ink);
+    font-weight:700; font-family:'Fredoka', sans-serif; font-size:15px; padding:11px; border-radius:14px; cursor:pointer;
+  }
+
+  /* ---------- Timeline ---------- */
+  .timeline{ position:relative; padding-left: 22px; }
+  .timeline::before{ content:""; position:absolute; left:6px; top:4px; bottom:4px; width:2px; background: var(--line); }
+  .entry{ position:relative; margin-bottom: 14px; }
+  .entry::before{
+    content:""; position:absolute; left:-22px; top:6px; width:12px; height:12px; border-radius:50%;
+    background: var(--accent); border: 3px solid var(--paper);
+  }
+  .entry.note::before{ background: var(--alert); }
+  .entry-card{ background: var(--paper-card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; }
+  .entry-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .entry-time{ font-size:12px; color:var(--ink-soft); font-weight:700; }
+  .entry-title{ font-size:15px; font-weight:700; margin: 2px 0 4px; }
+  .entry-detail{ font-size:14px; color: var(--ink); }
+  .entry-tag{
+    display:inline-block; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; margin-top:6px;
+  }
+  .tag-bien{ background: var(--good-bg); color: var(--good); }
+  .tag-regular{ background: #FFF3D6; color:#B8860B; }
+  .tag-mal, .tag-alert{ background: var(--alert-bg); color: var(--alert); }
+  .del-btn{ background:none; border:none; color:var(--ink-soft); font-size:16px; cursor:pointer; padding:2px 4px; }
+
+  .empty-state{ text-align:center; padding: 34px 10px; color: var(--ink-soft); }
+  .empty-state .emoji{ font-size: 40px; display:block; margin-bottom:8px; }
+
+  .day-group-title{
+    font-size:13px; font-weight:800; color: var(--accent-dark); margin: 18px 0 8px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .day-group-title::after{ content:""; flex:1; height:1px; background: var(--line); }
+
+  select.filter{ width:auto; }
+
+  /* ---------- Settings ---------- */
+  .gender-row{ display:flex; gap:10px; }
+  .gender-opt{ flex:1; text-align:center; padding:14px 6px; border-radius:14px; border:1.5px solid var(--line); cursor:pointer; }
+  .gender-opt.selected{ border-color: var(--accent); background: var(--accent-light); }
+  .gender-opt .emoji{ font-size:26px; display:block; }
+  .gender-opt .lbl{ font-size:13px; font-weight:700; margin-top:4px; }
+
+  .toast{
+    position: fixed; bottom: 90px; left:50%; transform: translateX(-50%);
+    background: var(--ink); color:white; padding: 10px 18px; border-radius: 999px; font-size:14px; font-weight:600;
+    opacity:0; pointer-events:none; transition: opacity .25s, transform .25s; z-index: 100;
+  }
+  .toast.show{ opacity:1; transform: translateX(-50%) translateY(-6px); }
+
+  .modal-bg{
+    position:fixed; inset:0; background: rgba(20,20,25,0.45); display:none; align-items:flex-end; z-index:200;
+  }
+  .modal-bg.show{ display:flex; }
+  .modal{
+    background: var(--paper-card); width:100%; max-width:520px; margin:0 auto; border-radius: 22px 22px 0 0;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto;
+  }
+  .modal h3{ margin-top:0; }
+  .close-modal{ float:right; background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="brand"><span class="brand-icon">🍼</span> Bitácora</div>
+    <button class="settings-btn" id="openSettingsBtn" title="Ajustes">⚙️</button>
+  </div>
+  <div class="baby-name" id="babyNameDisplay">Nuestro bebé</div>
+  <div class="baby-sub" id="babySubDisplay">Registro diario de comidas y novedades</div>
+</header>
+
+<main>
+
+  <!-- ================= VISTA: HOY ================= -->
+  <section class="view active" id="view-hoy">
+
+    <div class="section-title">Agregar comida</div>
+    <div class="card">
+      <h3>🍽️ ¿Qué comió?</h3>
+      <div class="field">
+        <label>Momento del día</label>
+        <div class="chip-row" id="mealTypeChips">
+          <div class="chip" data-value="Desayuno"><span class="emoji">🌅</span>Desayuno</div>
+          <div class="chip" data-value="Almuerzo"><span class="emoji">☀️</span>Almuerzo</div>
+          <div class="chip" data-value="Merienda"><span class="emoji">🍎</span>Merienda</div>
+          <div class="chip" data-value="Cena"><span class="emoji">🌙</span>Cena</div>
+          <div class="chip" data-value="Otro"><span class="emoji">🥄</span>Otro</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Hora</label>
+        <input type="time" id="mealTime">
+      </div>
+      <div class="field">
+        <label>¿Qué le diste de comer?</label>
+        <input type="text" id="mealFood" placeholder="Ej: puré de plátano, sopa, leche...">
+      </div>
+      <div class="field">
+        <label>¿Cómo comió?</label>
+        <div class="chip-row" id="mealRatingChips">
+          <div class="chip" data-value="Bien"><span class="emoji">😋</span>Bien</div>
+          <div class="chip" data-value="Regular"><span class="emoji">😐</span>Regular</div>
+          <div class="chip" data-value="Poco"><span class="emoji">🙁</span>Comió poco</div>
+          <div class="chip" data-value="No quiso"><span class="emoji">🚫</span>No quiso</div>
+        </div>
+      </div>
+      <button class="btn-primary" id="saveMealBtn">Guardar comida</button>
+    </div>
+
+    <div class="section-title">Agregar novedad del día</div>
+    <div class="card">
+      <h3>📝 ¿Notaste algo diferente?</h3>
+      <div class="field">
+        <label>Categoría</label>
+        <div class="chip-row" id="noteCatChips">
+          <div class="chip" data-value="Palabra nueva"><span class="emoji">🗣️</span>Palabra nueva</div>
+          <div class="chip" data-value="Diarrea"><span class="emoji">💩</span>Diarrea</div>
+          <div class="chip" data-value="Vómito"><span class="emoji">🤢</span>Vómito</div>
+          <div class="chip" data-value="Fiebre"><span class="emoji">🌡️</span>Fiebre</div>
+          <div class="chip" data-value="Durmió mal"><span class="emoji">😴</span>Durmió mal</div>
+          <div class="chip" data-value="Alergia / ronchas"><span class="emoji">🔴</span>Ronchas</div>
+          <div class="chip" data-value="Logro nuevo"><span class="emoji">⭐</span>Logro nuevo</div>
+          <div class="chip" data-value="Otro"><span class="emoji">✏️</span>Otro</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Hora</label>
+        <input type="time" id="noteTime">
+      </div>
+      <div class="field">
+        <label>Cuéntanos más</label>
+        <textarea id="noteText" placeholder="Ej: Dijo 'agua' por primera vez, o: hizo popó aguada dos veces..."></textarea>
+      </div>
+      <button class="btn-primary" id="saveNoteBtn">Guardar novedad</button>
+    </div>
+
+    <div class="section-title">Registro de hoy</div>
+    <div id="todayTimeline" class="timeline"></div>
+
+  </section>
+
+  <!-- ================= VISTA: HISTORIAL ================= -->
+  <section class="view" id="view-historial">
+    <div class="section-title">Historial completo</div>
+    <div class="card" style="display:flex; gap:10px; align-items:center;">
+      <label style="font-size:13px; font-weight:700; color:var(--ink-soft); margin:0;">Filtrar:</label>
+      <select id="historyFilter" class="filter" style="flex:1;">
+        <option value="todos">Todo</option>
+        <option value="comida">Solo comidas</option>
+        <option value="nota">Solo novedades</option>
+      </select>
+    </div>
+    <div id="historyList"></div>
+  </section>
+
+  <!-- ================= VISTA: AJUSTES (también como panel) ================= -->
+  <section class="view" id="view-ajustes">
+    <div class="section-title">Datos del bebé</div>
+    <div class="card">
+      <div class="field">
+        <label>Nombre</label>
+        <input type="text" id="settingName" placeholder="Nombre del bebé">
+      </div>
+      <div class="field">
+        <label>Fecha de nacimiento (opcional)</label>
+        <input type="date" id="settingBirthdate">
+      </div>
+      <div class="field">
+        <label>Color de la app</label>
+        <div class="gender-row" id="genderOptions">
+          <div class="gender-opt" data-value="nino"><span class="emoji">💙</span><div class="lbl">Niño</div></div>
+          <div class="gender-opt" data-value="nina"><span class="emoji">💗</span><div class="lbl">Niña</div></div>
+          <div class="gender-opt" data-value="neutro"><span class="emoji">💜</span><div class="lbl">Prefiero no decir</div></div>
+        </div>
+      </div>
+      <button class="btn-primary" id="saveSettingsBtn">Guardar cambios</button>
+    </div>
+
+    <div class="section-title">Respaldo de la información</div>
+    <div class="card">
+      <p style="margin-top:0; font-size:14px; color:var(--ink-soft);">
+        Esta información se guarda solo en este dispositivo/navegador. Si varias personas cuidan al bebé desde
+        celulares distintos, cada uno tendrá su propio registro — usa "Exportar" para compartir un respaldo
+        (por ejemplo, por WhatsApp) y "Importar" para cargarlo en otro dispositivo.
+      </p>
+      <button class="btn-secondary" id="exportBtn" style="margin-bottom:10px;">⬇️ Exportar respaldo (.json)</button>
+      <button class="btn-secondary" id="importBtn">⬆️ Importar respaldo</button>
+      <input type="file" id="importFile" accept=".json" style="display:none;">
+    </div>
+
+    <div class="section-title">Zona de peligro</div>
+    <div class="card">
+      <button class="btn-secondary" id="clearBtn" style="color:var(--alert); border-color:var(--alert-bg);">🗑️ Borrar todo el registro</button>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabs">
+  <button class="active" data-view="hoy"><span class="tab-icon">📅</span><span class="tab-label">Hoy</span></button>
+  <button data-view="historial"><span class="tab-icon">📖</span><span class="tab-label">Historial</span></button>
+  <button data-view="ajustes"><span class="tab-icon">⚙️</span><span class="tab-label">Ajustes</span></button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const STORAGE_KEY = "babylog_entries_v1";
+  const SETTINGS_KEY = "babylog_settings_v1";
+
+  let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+  settings.gender = settings.gender || "neutro";
+
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+  function saveSettings(){
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }
+
+  function pad(n){ return n.toString().padStart(2,"0"); }
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  }
+  function nowTime(){
+    const d = new Date();
+    return pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+  function fmtDateHuman(dateStr){
+    const [y,m,d] = dateStr.split("-").map(Number);
+    const dt = new Date(y, m-1, d);
+    const opts = { weekday:'long', day:'numeric', month:'long' };
+    let s = dt.toLocaleDateString('es-ES', opts);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  /* ---------- Tema / Ajustes ---------- */
+  function applyTheme(){
+    document.documentElement.setAttribute('data-gender', settings.gender);
+    $$('.gender-opt').forEach(el => el.classList.toggle('selected', el.dataset.value === settings.gender));
+  }
+  function applySettingsToUI(){
+    $('#settingName').value = settings.name || "";
+    $('#settingBirthdate').value = settings.birthdate || "";
+    $('#babyNameDisplay').textContent = settings.name ? settings.name : "Nuestro bebé";
+    if(settings.birthdate){
+      const bd = new Date(settings.birthdate);
+      const diffDays = Math.floor((new Date() - bd) / (1000*60*60*24));
+      let ageTxt;
+      if(diffDays < 60){ ageTxt = diffDays + " días de vida"; }
+      else {
+        const months = Math.floor(diffDays/30.44);
+        ageTxt = months + (months===1 ? " mes" : " meses") + " de vida";
+      }
+      $('#babySubDisplay').textContent = ageTxt;
+    } else {
+      $('#babySubDisplay').textContent = "Registro diario de comidas y novedades";
+    }
+    applyTheme();
+  }
+
+  $$('.gender-opt').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      settings.gender = el.dataset.value;
+      applyTheme();
+    });
+  });
+
+  $('#saveSettingsBtn').addEventListener('click', ()=>{
+    settings.name = $('#settingName').value.trim();
+    settings.birthdate = $('#settingBirthdate').value;
+    saveSettings();
+    applySettingsToUI();
+    showToast("Datos guardados ✅");
+  });
+
+  /* ---------- Navegación de pestañas ---------- */
+  $$('nav.tabs button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('nav.tabs button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      $$('.view').forEach(v=>v.classList.remove('active'));
+      $('#view-'+btn.dataset.view).classList.add('active');
+      if(btn.dataset.view === 'historial') renderHistory();
+    });
+  });
+  $('#openSettingsBtn').addEventListener('click', ()=>{
+    $$('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    $('nav.tabs button[data-view="ajustes"]').classList.add('active');
+    $$('.view').forEach(v=>v.classList.remove('active'));
+    $('#view-ajustes').classList.add('active');
+  });
+
+  /* ---------- Chips (selección única dentro de su grupo) ---------- */
+  function setupChipGroup(containerId){
+    const container = $(containerId);
+    container.addEventListener('click', (e)=>{
+      const chip = e.target.closest('.chip');
+      if(!chip) return;
+      Array.from(container.children).forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected');
+    });
+  }
+  setupChipGroup('#mealTypeChips');
+  setupChipGroup('#mealRatingChips');
+  setupChipGroup('#noteCatChips');
+
+  function getSelectedChip(containerId){
+    const sel = $(containerId).querySelector('.chip.selected');
+    return sel ? sel.dataset.value : null;
+  }
+
+  /* ---------- Guardar comida ---------- */
+  $('#mealTime').value = nowTime();
+  $('#noteTime').value = nowTime();
+
+  $('#saveMealBtn').addEventListener('click', ()=>{
+    const mealType = getSelectedChip('#mealTypeChips');
+    const food = $('#mealFood').value.trim();
+    const rating = getSelectedChip('#mealRatingChips');
+    const time = $('#mealTime').value || nowTime();
+
+    if(!mealType){ showToast("Elige un momento del día"); return; }
+    if(!food){ showToast("Escribe qué le diste de comer"); $('#mealFood').focus(); return; }
+    if(!rating){ showToast("Elige cómo comió"); return; }
+
+    entries.push({
+      id: Date.now(),
+      type: "comida",
+      date: todayStr(),
+      time: time,
+      mealType, food, rating
+    });
+    save();
+
+    $('#mealFood').value = "";
+    $$('#mealTypeChips .chip').forEach(c=>c.classList.remove('selected'));
+    $$('#mealRatingChips .chip').forEach(c=>c.classList.remove('selected'));
+    $('#mealTime').value = nowTime();
+
+    showToast("Comida guardada 🍽️");
+    renderToday();
+  });
+
+  /* ---------- Guardar novedad ---------- */
+  $('#saveNoteBtn').addEventListener('click', ()=>{
+    const cat = getSelectedChip('#noteCatChips');
+    const text = $('#noteText').value.trim();
+    const time = $('#noteTime').value || nowTime();
+
+    if(!cat){ showToast("Elige una categoría"); return; }
+    if(!text){ showToast("Cuéntanos qué pasó"); $('#noteText').focus(); return; }
+
+    entries.push({
+      id: Date.now(),
+      type: "nota",
+      date: todayStr(),
+      time: time,
+      category: cat, text
+    });
+    save();
+
+    $('#noteText').value = "";
+    $$('#noteCatChips .chip').forEach(c=>c.classList.remove('selected'));
+    $('#noteTime').value = nowTime();
+
+    showToast("Novedad guardada 📝");
+    renderToday();
+  });
+
+  /* ---------- Render ---------- */
+  const alertCats = ["Diarrea","Vómito","Fiebre","Alergia / ronchas"];
+  const mealEmoji = { Desayuno:"🌅", Almuerzo:"☀️", Merienda:"🍎", Cena:"🌙", Otro:"🥄" };
+  const noteEmoji = {
+    "Palabra nueva":"🗣️", "Diarrea":"💩", "Vómito":"🤢", "Fiebre":"🌡️",
+    "Durmió mal":"😴", "Alergia / ronchas":"🔴", "Logro nuevo":"⭐", "Otro":"✏️"
+  };
+
+  function ratingTagClass(rating){
+    if(rating === "Bien") return "tag-bien";
+    if(rating === "Regular") return "tag-regular";
+    return "tag-mal";
+  }
+
+  function entryToHTML(e){
+    if(e.type === "comida"){
+      return `
+        <div class="entry">
+          <div class="entry-card">
+            <div class="entry-top">
+              <div>
+                <div class="entry-time mono">${e.time}</div>
+                <div class="entry-title">${mealEmoji[e.mealType]||"🍽️"} ${e.mealType}</div>
+                <div class="entry-detail">${escapeHTML(e.food)}</div>
+                <span class="entry-tag ${ratingTagClass(e.rating)}">${e.rating}</span>
+              </div>
+              <button class="del-btn" data-id="${e.id}" title="Eliminar">✕</button>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      const isAlert = alertCats.includes(e.category);
+      return `
+        <div class="entry note">
+          <div class="entry-card">
+            <div class="entry-top">
+              <div>
+                <div class="entry-time mono">${e.time}</div>
+                <div class="entry-title">${noteEmoji[e.category]||"📝"} ${e.category}</div>
+                <div class="entry-detail">${escapeHTML(e.text)}</div>
+                ${isAlert ? `<span class="entry-tag tag-alert">A tener en cuenta</span>` : ``}
+              </div>
+              <button class="del-btn" data-id="${e.id}" title="Eliminar">✕</button>
+            </div>
+          </div>
+        </div>`;
+    }
+  }
+
+  function escapeHTML(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderToday(){
+    const t = todayStr();
+    const todays = entries.filter(e=>e.date===t).sort((a,b)=> a.time.localeCompare(b.time));
+    const container = $('#todayTimeline');
+    if(todays.length === 0){
+      container.innerHTML = `<div class="empty-state"><span class="emoji">🌤️</span>Aún no hay registros hoy.<br>Agrega la primera comida o novedad arriba.</div>`;
+      return;
+    }
+    container.innerHTML = todays.map(entryToHTML).join("");
+  }
+
+  function renderHistory(){
+    const filter = $('#historyFilter').value;
+    let filtered = entries.slice();
+    if(filter !== "todos") filtered = filtered.filter(e=>e.type===filter);
+    filtered.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+
+    const container = $('#historyList');
+    if(filtered.length === 0){
+      container.innerHTML = `<div class="empty-state"><span class="emoji">📭</span>No hay registros para mostrar.</div>`;
+      return;
+    }
+    const groups = {};
+    filtered.forEach(e=>{
+      groups[e.date] = groups[e.date] || [];
+      groups[e.date].push(e);
+    });
+    let html = "";
+    Object.keys(groups).sort().reverse().forEach(date=>{
+      html += `<div class="day-group-title">${fmtDateHuman(date)}</div>`;
+      html += `<div class="timeline">` + groups[date].map(entryToHTML).join("") + `</div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  $('#historyFilter').addEventListener('change', renderHistory);
+
+  document.addEventListener('click', (e)=>{
+    const del = e.target.closest('.del-btn');
+    if(del){
+      const id = Number(del.dataset.id);
+      if(confirm("¿Eliminar este registro?")){
+        entries = entries.filter(x=>x.id !== id);
+        save();
+        renderToday();
+        renderHistory();
+      }
+    }
+  });
+
+  /* ---------- Exportar / Importar / Borrar ---------- */
+  $('#exportBtn').addEventListener('click', ()=>{
+    const payload = { settings, entries, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const name = (settings.name || "bebe").replace(/\s+/g,"_");
+    a.href = url;
+    a.download = `bitacora_${name}_${todayStr()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Respaldo descargado ⬇️");
+  });
+
+  $('#importBtn').addEventListener('click', ()=> $('#importFile').click());
+  $('#importFile').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        const data = JSON.parse(evt.target.result);
+        if(!confirm("Esto reemplazará el registro actual en este dispositivo con el del archivo. ¿Continuar?")) return;
+        entries = data.entries || [];
+        settings = Object.assign({gender:"neutro"}, data.settings || {});
+        save(); saveSettings();
+        applySettingsToUI();
+        renderToday(); renderHistory();
+        showToast("Respaldo importado ✅");
+      }catch(err){
+        alert("No se pudo leer el archivo. Asegúrate de que sea un respaldo válido (.json).");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  $('#clearBtn').addEventListener('click', ()=>{
+    if(confirm("Esto borrará TODO el registro de este dispositivo de forma permanente. ¿Seguro que deseas continuar?")){
+      entries = [];
+      save();
+      renderToday(); renderHistory();
+      showToast("Registro borrado");
+    }
+  });
+
+  /* ---------- Toast ---------- */
+  let toastTimer;
+  function showToast(msg){
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+  }
+
+  /* ---------- Init ---------- */
+  applySettingsToUI();
+  renderToday();
+})();
+</script>
+
+</body>
+</html>
